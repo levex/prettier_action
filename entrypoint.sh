@@ -68,6 +68,8 @@ if [ -n "$INPUT_PRETTIER_PLUGINS" ]; then
 fi
 )
 
+echo Getting prettier version
+prettier --version
 echo Setting git up
 _git_setup
 echo Finished Git setup
