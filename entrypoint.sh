@@ -88,7 +88,7 @@ done
 echo "done"
 
 # Filter files to be with svelte only
-filtered_changed_files=$(git --no-pager diff --name-only --diff-filter=d ${MERGE_HEAD}..HEAD | grep -E '\.js$|\.svelte$')
+filtered_changed_files=$(git --no-pager diff --name-only --diff-filter=d ${MERGE_HEAD}..HEAD | { grep -E '\.js$|\.svelte$' || true })
 echo "Filtered Files:"
 if [[ -z ${filtered_changed_files} ]]; then
 	echo "no filtered files were changed"
