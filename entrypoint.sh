@@ -102,5 +102,4 @@ done
 
 PRETTIER_RESULT=0
 echo "Prettifying files..."
-prettier --check ${filtered_changed_files}
-  || { PRETTIER_RESULT=$?; echo "Problem running prettier with $INPUT_PRETTIER_OPTIONS"; exit 1; }
+prettier --check ${filtered_changed_files} || { PRETTIER_RESULT=$?; echo "Problem running prettier with $INPUT_PRETTIER_OPTIONS"; exit 1; }
