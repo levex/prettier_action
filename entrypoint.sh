@@ -103,7 +103,8 @@ if _git_changed; then
       # --diff-filter=d excludes deleted files
       OLDIFS="$IFS"
       IFS=$'\n'
-      for file in $(git diff --name-only --diff-filter=d HEAD^..HEAD)
+      MERGE_HEAD=$(git merge-base master HEAD)
+      for file in $(git --no-pager diff --name-only --diff-filter=d ${MERGE_HEAD}..HEAD)
       do
         git add "$file"
       done
