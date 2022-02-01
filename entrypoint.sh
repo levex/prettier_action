@@ -75,26 +75,28 @@ MERGE_HEAD=$(git merge-base origin/master HEAD)
 echo MERGE_HEAD=${MERGE_HEAD}
 changed_files=$(git --no-pager diff --name-only --diff-filter=d ${MERGE_HEAD}..HEAD)
 echo "Files:"
-for i in ${changed_files}; do
-	echo - $i
-done
 
 if [[ -z ${changed_files} ]]; then
 	echo "no files were changed"
 	exit 0
 fi
 
-# Filter files to be with svelte only
-filtered_changed_files=$(git --no-pager diff --name-only $(git merge-base origin/master HEAD) HEAD | egrep '\.js$|\.svelte$')
-echo "Filtered Files:"
-for i in ${filtered_changed_files}; do
+for i in ${changed_files}; do
 	echo - $i
 done
 
+# Filter files to be with svelte only
+filtered_changed_files=$(git --no-pager diff --name-only $(git merge-base origin/master HEAD) HEAD | egrep '\.js$|\.svelte$')
+echo "Filtered Files:"
 if [[ -z ${filtered_changed_files} ]]; then
 	echo "no filtered files were changed"
 	exit 0
 fi
+
+for i in ${filtered_changed_files}; do
+	echo - $i
+done
+
 
 PRETTIER_RESULT=0
 echo "Prettifying files..."
