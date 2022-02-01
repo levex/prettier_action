@@ -68,75 +68,35 @@ if [ -n "$INPUT_PRETTIER_PLUGINS" ]; then
 fi
 )
 
+echo Setting git up
+_git_setup
+echo Finished Git setup
+MERGE_HEAD=$(git merge-base origin/master HEAD)
+echo MERGE_HEAD=${MERGE_HEAD}
+changed_files=$(git --no-pager diff --name-only --diff-filter=d ${MERGE_HEAD}..HEAD)
+echo "Files:"
+for i in ${changed_files}; do
+	echo - $i
+done
+
+if [[ -z ${changed_files} ]]; then
+	echo "no files were changed"
+	exit 0
+fi
+
+# Filter files to be with svelte only
+filtered_changed_files=$(git --no-pager diff --name-only $(git merge-base origin/master HEAD) HEAD | egrep '\.js$|\.svelte$')
+echo "Filtered Files:"
+for i in ${filtered_changed_files}; do
+	echo - $i
+done
+
+if [[ -z ${filtered_changed_files} ]]; then
+	echo "no filtered files were changed"
+	exit 0
+fi
+
 PRETTIER_RESULT=0
 echo "Prettifying files..."
-echo "Files:"
-prettier $INPUT_PRETTIER_OPTIONS \
+prettier --check ${filtered_changed_files}
   || { PRETTIER_RESULT=$?; echo "Problem running prettier with $INPUT_PRETTIER_OPTIONS"; exit 1; }
-
-# Ignore node modules and other action created files
-if [ -d 'node_modules' ]; then
-  rm -r node_modules/
-else
-  echo "No node_modules/ folder."
-fi
-
-if [ -f 'package-lock.json' ]; then
-  git checkout -- package-lock.json
-else
-  echo "No package-lock.json file."
-fi
-
-# To keep runtime good, just continue if something was changed
-if _git_changed; then
-  # case when --write is used with dry-run so if something is unpretty there will always have _git_changed
-  if $INPUT_DRY; then
-    echo "Unpretty Files Changes:"
-    _git_changes
-    echo "Finishing dry-run. Exiting before committing."
-    exit 1
-  else
-    # Calling method to configure the git environemnt
-    _git_setup
-
-    if $INPUT_ONLY_CHANGED; then
-      # --diff-filter=d excludes deleted files
-      OLDIFS="$IFS"
-      IFS=$'\n'
-      for file in $(git diff --name-only --diff-filter=d HEAD^..HEAD)
-      do
-        git add "$file"
-      done
-      IFS="$OLDIFS"
-    else
-      # Add changes to git
-      git add "${INPUT_FILE_PATTERN}" || echo "Problem adding your files with pattern ${INPUT_FILE_PATTERN}"
-    fi
-
-    # Commit and push changes back
-    if $INPUT_SAME_COMMIT; then
-      echo "Amending the current commit..."
-      git pull
-      git commit --amend --no-edit
-      git push origin -f
-    else
-      if [ "$INPUT_COMMIT_DESCRIPTION" != "" ]; then
-          git commit -m "$INPUT_COMMIT_MESSAGE" -m "$INPUT_COMMIT_DESCRIPTION" --author="$GITHUB_ACTOR <$GITHUB_ACTOR@users.noreply.github.com>" ${INPUT_COMMIT_OPTIONS:+"$INPUT_COMMIT_OPTIONS"} || echo "No files added to commit"
-      else
-          git commit -m "$INPUT_COMMIT_MESSAGE" --author="$GITHUB_ACTOR <$GITHUB_ACTOR@users.noreply.github.com>" ${INPUT_COMMIT_OPTIONS:+"$INPUT_COMMIT_OPTIONS"} || echo "No files added to commit"
-      fi
-      git push origin ${INPUT_PUSH_OPTIONS:-}
-    fi
-    echo "Changes pushed successfully."
-  fi
-else
-  # case when --check is used so there will never have something to commit but there are unpretty files
-  if [ "$PRETTIER_RESULT" -eq 1 ]; then
-    echo "Prettier found unpretty files!"
-    exit 1
-  else
-    echo "Finishing dry-run."
-  fi
-  echo "No unpretty files!"
-  echo "Nothing to commit. Exiting."
-fi
